@@ -6,6 +6,7 @@ Lightweight desktop VPS management tool over SSH, originally built as a Tauri de
 
 - **Frontend**: React 18 + TypeScript + Vite 5
 - **UI Libraries**: Mantine v8, Radix UI, Tailwind CSS, Framer Motion
+- **Fonts**: Inter (UI), JetBrains Mono (code/monospace)
 - **Visualization**: ReactFlow (infrastructure graphs), Recharts (charts)
 - **Original Backend**: Tauri (Rust) - not active in Replit environment
 
@@ -13,7 +14,7 @@ Lightweight desktop VPS management tool over SSH, originally built as a Tauri de
 
 - `src/` - React frontend source
   - `components/` - UI components (Dashboard, Docker, Services, Nginx, Cron, Logs, etc.)
-  - `components/layout/` - NavigationRail, TopBar
+  - `components/layout/` - NavigationRail (sidebar), TopBar (header)
   - `components/ui/` - LoadingScreen, Skeleton
   - `components/config-graph/` - Config dependency graph visualization
   - `components/infrastructure-graph/` - Infrastructure graph visualization
@@ -21,9 +22,9 @@ Lightweight desktop VPS management tool over SSH, originally built as a Tauri de
   - `hooks/` - Custom React hooks
   - `lib/` - Utilities (tauri.ts - isTauri() environment detection)
   - `types/` - TypeScript type definitions
-  - `styles/` - CSS styles
+  - `styles/` - CSS styles (modern-theme.css)
 - `src-tauri/` - Tauri/Rust backend (not used in Replit)
-- `index.html` - Entry point
+- `index.html` - Entry point (loads Inter + JetBrains Mono from Google Fonts)
 
 ## Running
 
@@ -31,11 +32,22 @@ Lightweight desktop VPS management tool over SSH, originally built as a Tauri de
 - Build: `npm run build` (outputs to `dist/`)
 - Deployment: Static site (dist directory)
 
+## Design System
+
+- **Color Palette**: Deep dark base (#0a0a0f), blue accent (#3b82f6), cyan accent (#06b6d4), gradient combos
+- **Primary Color**: Blue (Mantine primaryColor), used for buttons, active states, focus rings
+- **Glass Effects**: Cards use `backdrop-filter: blur` with semi-transparent backgrounds (`.glass-card`, `.glass-card-glow`)
+- **Buttons**: Gradient (blue-to-cyan) for primary actions, outlined with glow for secondary (`.btn-gradient`, `.btn-outline-glow`)
+- **Animations**: Animated border glow, status pulse, text shimmer, float, fade-in
+- **NavigationRail**: Left-edge gradient accent bar for active item, gradient icon background, expand-on-hover
+- **TopBar**: Gradient line separator, glassmorphism search bar, pulse animation on status indicator
+
 ## Key Design Decisions
 
 - `src/lib/tauri.ts` exports `isTauri()` to detect the Tauri runtime. All components that call `invoke()` on mount/intervals guard with this function to prevent error spam in the web environment.
 - ServerContext provides a `disconnect()` function that resets connection state and invalidates caches.
 - Non-functional TopBar elements (search, notifications, settings) show "coming soon" tooltips.
+- Mantine theme in `main.tsx` configures global component overrides for consistent styling (Button, Paper, TextInput, etc.)
 
 ## Notes
 

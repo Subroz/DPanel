@@ -50,8 +50,8 @@ export function NavigationRail({ currentView, onViewChange }: NavigationRailProp
       style={{
         width: expanded ? 240 : 72,
         height: '100vh',
-        background: '#0a0a0a',
-        borderRight: '1px solid #1a1a1a',
+        background: 'linear-gradient(180deg, #0c0c16 0%, #0a0a0f 100%)',
+        borderRight: '1px solid rgba(255, 255, 255, 0.04)',
         display: 'flex',
         flexDirection: 'column',
         position: 'relative',
@@ -62,7 +62,6 @@ export function NavigationRail({ currentView, onViewChange }: NavigationRailProp
       onMouseEnter={() => setExpanded(true)}
       onMouseLeave={() => setExpanded(false)}
     >
-      {/* Logo Section */}
       <Box style={{ padding: '16px', display: 'flex', justifyContent: 'center' }}>
         <Group gap="md" justify="center" wrap="nowrap">
           <Box
@@ -73,8 +72,18 @@ export function NavigationRail({ currentView, onViewChange }: NavigationRailProp
               alignItems: 'center',
               justifyContent: 'center',
               flexShrink: 0,
+              position: 'relative',
             }}
           >
+            <Box
+              style={{
+                position: 'absolute',
+                inset: -8,
+                background: 'radial-gradient(circle, rgba(59, 130, 246, 0.12) 0%, transparent 70%)',
+                borderRadius: '50%',
+                pointerEvents: 'none',
+              }}
+            />
             <img
               src={logo}
               alt="DPanel"
@@ -82,6 +91,8 @@ export function NavigationRail({ currentView, onViewChange }: NavigationRailProp
                 width: 40,
                 height: 40,
                 objectFit: 'contain',
+                position: 'relative',
+                zIndex: 1,
               }}
             />
           </Box>
@@ -98,8 +109,8 @@ export function NavigationRail({ currentView, onViewChange }: NavigationRailProp
                 <Text
                   size="xl"
                   fw={800}
-                  c="white"
                   style={{ letterSpacing: '-1px', whiteSpace: 'nowrap' }}
+                  className="gradient-text"
                 >
                   DPanel
                 </Text>
@@ -109,10 +120,9 @@ export function NavigationRail({ currentView, onViewChange }: NavigationRailProp
         </Group>
       </Box>
 
-      <Divider my="xs" style={{ borderColor: '#1a1a1a' }} />
+      <Divider my="xs" style={{ borderColor: 'rgba(255, 255, 255, 0.04)' }} />
 
-      {/* Navigation Items */}
-      <Stack gap={2} style={{ padding: '8px', flex: 1 }}>
+      <Stack gap={4} style={{ padding: '8px', flex: 1 }}>
         {menuItems.map((item) => {
           const isActive = currentView === item.id;
 
@@ -124,6 +134,16 @@ export function NavigationRail({ currentView, onViewChange }: NavigationRailProp
               withArrow
               arrowSize={6}
               disabled={expanded}
+              styles={{
+                tooltip: {
+                  background: 'rgba(17, 17, 24, 0.95)',
+                  backdropFilter: 'blur(8px)',
+                  border: '1px solid rgba(59, 130, 246, 0.2)',
+                  color: '#e2e8f0',
+                  fontSize: '13px',
+                  fontWeight: 500,
+                },
+              }}
             >
               <UnstyledButton
                 onClick={() => isConnected && onViewChange(item.id)}
@@ -137,16 +157,20 @@ export function NavigationRail({ currentView, onViewChange }: NavigationRailProp
                     justifyContent: expanded ? 'flex-start' : 'center',
                     gap: '12px',
                     padding: '10px',
-                    borderRadius: '8px',
-                    background: isActive ? '#1a1a1a' : 'transparent',
+                    borderRadius: '12px',
+                    background: isActive
+                      ? 'linear-gradient(135deg, rgba(59, 130, 246, 0.12) 0%, rgba(6, 182, 212, 0.06) 100%)'
+                      : 'transparent',
                     cursor: isConnected ? 'pointer' : 'not-allowed',
-                    opacity: isConnected ? 1 : 0.5,
-                    transition: 'background 0.15s ease',
+                    opacity: isConnected ? 1 : 0.4,
+                    transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
                     minHeight: 44,
+                    position: 'relative',
+                    borderLeft: isActive ? '3px solid #3b82f6' : '3px solid transparent',
                   }}
                   onMouseEnter={(e) => {
                     if (isConnected && !isActive) {
-                      e.currentTarget.style.background = '#151515';
+                      e.currentTarget.style.background = 'rgba(255, 255, 255, 0.04)';
                     }
                   }}
                   onMouseLeave={(e) => {
@@ -155,19 +179,42 @@ export function NavigationRail({ currentView, onViewChange }: NavigationRailProp
                     }
                   }}
                 >
+                  {isActive && (
+                    <Box
+                      style={{
+                        position: 'absolute',
+                        left: -3,
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        width: 3,
+                        height: 20,
+                        background: 'linear-gradient(180deg, #3b82f6, #06b6d4)',
+                        borderRadius: '0 4px 4px 0',
+                        boxShadow: '0 0 8px rgba(59, 130, 246, 0.5)',
+                      }}
+                    />
+                  )}
+
                   <Box
                     style={{
-                      width: 40,
-                      height: 40,
+                      width: 36,
+                      height: 36,
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      borderRadius: '8px',
-                      background: isActive ? '#ffffff' : 'transparent',
+                      borderRadius: '10px',
+                      background: isActive
+                        ? 'linear-gradient(135deg, #3b82f6, #06b6d4)'
+                        : 'transparent',
                       flexShrink: 0,
+                      transition: 'all 0.2s ease',
+                      boxShadow: isActive ? '0 2px 8px rgba(59, 130, 246, 0.3)' : 'none',
                     }}
                   >
-                    <Box style={{ color: isActive ? '#000000' : '#888888' }}>
+                    <Box style={{
+                      color: isActive ? '#ffffff' : '#666',
+                      transition: 'color 0.2s ease',
+                    }}>
                       {item.icon}
                     </Box>
                   </Box>

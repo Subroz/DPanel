@@ -51,7 +51,7 @@ function AppContent() {
         minHeight: '100vh',
         display: 'flex',
         overflow: 'hidden',
-        background: '#0a0a0a',
+        background: '#0a0a0f',
       }}
     >
       {/* Modern Navigation Rail */}

@@ -23,10 +23,103 @@ const theme = createTheme({
       '#141517',
       '#101113',
     ],
+    blue: [
+      '#e7f5ff',
+      '#d0ebff',
+      '#a5d8ff',
+      '#74c0fc',
+      '#4dabf7',
+      '#339af0',
+      '#228be6',
+      '#1c7ed6',
+      '#1971c2',
+      '#1864ab',
+    ],
   },
-  primaryColor: 'dark',
+  primaryColor: 'blue',
   fontFamily: 'Inter, system-ui, -apple-system, sans-serif',
-  defaultRadius: 'md',
+  fontFamilyMonospace: 'JetBrains Mono, ui-monospace, monospace',
+  defaultRadius: 'lg',
+  headings: {
+    fontFamily: 'Inter, system-ui, -apple-system, sans-serif',
+    fontWeight: '700',
+  },
+  components: {
+    Button: {
+      defaultProps: {
+        radius: 'lg',
+      },
+      styles: {
+        root: {
+          fontWeight: 600,
+          transition: 'all 0.2s ease',
+        },
+      },
+    },
+    Paper: {
+      styles: {
+        root: {
+          backgroundColor: 'rgba(17, 17, 17, 0.7)',
+          backdropFilter: 'blur(12px)',
+          borderColor: 'rgba(255, 255, 255, 0.06)',
+        },
+      },
+    },
+    TextInput: {
+      styles: {
+        input: {
+          backgroundColor: 'rgba(255, 255, 255, 0.04)',
+          borderColor: 'rgba(255, 255, 255, 0.08)',
+          transition: 'all 0.2s ease',
+          '&:focus': {
+            borderColor: '#3b82f6',
+            boxShadow: '0 0 0 2px rgba(59, 130, 246, 0.15)',
+          },
+        },
+      },
+    },
+    PasswordInput: {
+      styles: {
+        input: {
+          backgroundColor: 'rgba(255, 255, 255, 0.04)',
+          borderColor: 'rgba(255, 255, 255, 0.08)',
+          transition: 'all 0.2s ease',
+        },
+      },
+    },
+    NumberInput: {
+      styles: {
+        input: {
+          backgroundColor: 'rgba(255, 255, 255, 0.04)',
+          borderColor: 'rgba(255, 255, 255, 0.08)',
+          transition: 'all 0.2s ease',
+        },
+      },
+    },
+    ActionIcon: {
+      styles: {
+        root: {
+          transition: 'all 0.2s ease',
+        },
+      },
+    },
+    Badge: {
+      styles: {
+        root: {
+          fontWeight: 600,
+          letterSpacing: '0.02em',
+        },
+      },
+    },
+    SegmentedControl: {
+      styles: {
+        root: {
+          backgroundColor: 'rgba(255, 255, 255, 0.04)',
+          borderRadius: '12px',
+        },
+      },
+    },
+  },
 });
 
 ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
