@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo, useCallback, memo } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { useServer } from '../context/ServerContext';
+import { isTauri } from '../lib/tauri';
 import { SystemMetrics } from '../types';
 import {
   Paper,
@@ -61,6 +62,7 @@ const Dashboard = memo(function Dashboard() {
   const [cpuCores, setCpuCores] = useState<number>(1);
 
   const fetchMetrics = async () => {
+    if (!isTauri()) return;
     setLoading(true);
     try {
       const result = await invoke('get_system_metrics') as SystemMetrics;
@@ -74,8 +76,8 @@ const Dashboard = memo(function Dashboard() {
     }
   };
 
-  // Fetch CPU core count once
   useEffect(() => {
+    if (!isTauri()) return;
     const fetchCpuCores = async () => {
       try {
         const result = await invoke('execute_command', { command: 'nproc' });
@@ -91,8 +93,9 @@ const Dashboard = memo(function Dashboard() {
   }, []);
 
   useEffect(() => {
+    if (!isTauri()) return;
     fetchMetrics();
-    const interval = setInterval(fetchMetrics, 10000); // Optimized: 10s instead of 5s
+    const interval = setInterval(fetchMetrics, 10000);
     return () => clearInterval(interval);
   }, []);
 

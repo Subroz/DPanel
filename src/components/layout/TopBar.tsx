@@ -1,4 +1,4 @@
-import { Box, Group, Text, ThemeIcon, ActionIcon, Badge } from '@mantine/core';
+import { Box, Group, Text, ThemeIcon, ActionIcon, Badge, Tooltip } from '@mantine/core';
 import {
   IconWifi,
   IconWifiOff,
@@ -83,74 +83,72 @@ export function TopBar({ onDisconnect }: TopBarProps) {
       {/* Right Section - Actions */}
       <Group gap="sm">
         {/* Search Bar */}
-        <Box
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '12px',
-            padding: '10px 16px',
-            background: '#111',
-            borderRadius: '10px',
-            border: '1px solid #222',
-            minWidth: 280,
-          }}
-        >
-          <IconSearch size={18} color="#666" />
-          <Text size="sm" c="dimmed" style={{ flex: 1 }}>
-            Search...
-          </Text>
+        <Tooltip label="Search coming soon" position="bottom">
           <Box
             style={{
-              padding: '4px 8px',
-              background: '#1a1a1a',
-              borderRadius: '6px',
-              fontSize: '11px',
-              color: '#666',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px',
+              padding: '10px 16px',
+              background: '#111',
+              borderRadius: '10px',
+              border: '1px solid #222',
+              minWidth: 280,
+              opacity: 0.6,
+              cursor: 'default',
             }}
           >
-            ⌘K
-          </Box>
-        </Box>
-
-        {/* Notifications */}
-        <ActionIcon
-          size="lg"
-          variant="light"
-          style={{
-            background: '#111',
-            border: '1px solid #222',
-            borderRadius: '10px',
-          }}
-        >
-          <Box style={{ position: 'relative' }}>
-            <IconBell size={20} color="#666" />
+            <IconSearch size={18} color="#666" />
+            <Text size="sm" c="dimmed" style={{ flex: 1 }}>
+              Search...
+            </Text>
             <Box
               style={{
-                position: 'absolute',
-                top: -2,
-                right: -2,
-                width: 8,
-                height: 8,
-                background: '#ef4444',
-                borderRadius: '50%',
-                border: '2px solid #0a0a0a',
+                padding: '4px 8px',
+                background: '#1a1a1a',
+                borderRadius: '6px',
+                fontSize: '11px',
+                color: '#666',
               }}
-            />
+            >
+              ⌘K
+            </Box>
           </Box>
-        </ActionIcon>
+        </Tooltip>
+
+        {/* Notifications */}
+        <Tooltip label="Notifications coming soon" position="bottom">
+          <ActionIcon
+            size="lg"
+            variant="light"
+            style={{
+              background: '#111',
+              border: '1px solid #222',
+              borderRadius: '10px',
+              opacity: 0.6,
+              cursor: 'default',
+            }}
+          >
+            <IconBell size={20} color="#666" />
+          </ActionIcon>
+        </Tooltip>
 
         {/* Settings */}
-        <ActionIcon
-          size="lg"
-          variant="light"
-          style={{
-            background: '#111',
-            border: '1px solid #222',
-            borderRadius: '10px',
-          }}
-        >
-          <IconSettings size={20} color="#666" />
-        </ActionIcon>
+        <Tooltip label="Settings coming soon" position="bottom">
+          <ActionIcon
+            size="lg"
+            variant="light"
+            style={{
+              background: '#111',
+              border: '1px solid #222',
+              borderRadius: '10px',
+              opacity: 0.6,
+              cursor: 'default',
+            }}
+          >
+            <IconSettings size={20} color="#666" />
+          </ActionIcon>
+        </Tooltip>
 
         {/* Disconnect Button */}
         {isConnected && (

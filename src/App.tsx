@@ -1,6 +1,5 @@
 import { useState, Suspense, lazy, useEffect } from 'react';
 import { Box } from '@mantine/core';
-import { useDisclosure } from '@mantine/hooks';
 import { ServerProvider, useServer } from './context/ServerContext';
 import { NavigationRail } from './components/layout/NavigationRail';
 import { TopBar } from './components/layout/TopBar';

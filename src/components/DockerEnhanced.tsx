@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useMemo, memo } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { useServer } from '../context/ServerContext';
 import { useToast } from '../context/ToastContext';
+import { isTauri } from '../lib/tauri';
 import { DockerContainer, ContainerDetails, DockerVolume, DockerNetwork, DockerImage, ComposeProject } from '../types';
 import {
   Paper,
@@ -67,7 +68,7 @@ const DockerEnhanced = memo(function DockerEnhanced() {
   const [loadedTabs, setLoadedTabs] = useState<Set<string>>(new Set(['containers']));
 
   const fetchContainers = useCallback(async () => {
-    if (!isConnected) return;
+    if (!isConnected || !isTauri()) return;
     try {
       const containersData = await invoke<DockerContainer[]>('get_docker_containers');
       setContainers(containersData);
@@ -77,7 +78,7 @@ const DockerEnhanced = memo(function DockerEnhanced() {
   }, [isConnected, addToast]);
 
   const fetchTabData = useCallback(async (tab: string) => {
-    if (!isConnected || loadedTabs.has(tab)) return;
+    if (!isConnected || !isTauri() || loadedTabs.has(tab)) return;
 
     setLoading(true);
     try {

@@ -2,9 +2,10 @@ import { useState, useEffect, useCallback } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { useServer } from '../context/ServerContext';
 import { useToast } from '../context/ToastContext';
-import { SystemUser, CreateUserRequest } from '../types';
+import { isTauri } from '../lib/tauri';
+import { SystemUser, SystemGroup, CreateUserRequest } from '../types';
 import {
-  Paper, Text, Group, Title, Button, Stack, Table, Badge, ActionIcon, Modal, Box, Loader, Center, ThemeIcon, Divider, TextInput, Select, Card, SimpleGrid, Switch, Tooltip, ScrollArea,
+  Paper, Text, Group, Title, Button, Stack, Table, Badge, ActionIcon, Modal, Box, Loader, Center, ThemeIcon, Divider, TextInput, Select, MultiSelect, Card, SimpleGrid, Switch, Tooltip, ScrollArea,
 } from '@mantine/core';
 import {
   IconUsers, IconRefresh, IconPlus, IconTrash, IconLock, IconLockOpen, IconShield, IconUserX,
@@ -28,7 +29,7 @@ export default function UserManager() {
   });
 
   const fetchUsers = useCallback(async () => {
-    if (!isConnected) return;
+    if (!isConnected || !isTauri()) return;
     setLoading(true);
     try {
       const usersData = await invoke<SystemUser[]>('get_system_users');
@@ -41,7 +42,7 @@ export default function UserManager() {
   }, [isConnected, addToast]);
 
   const fetchGroups = useCallback(async () => {
-    if (!isConnected) return;
+    if (!isConnected || !isTauri()) return;
     try {
       const groupsData = await invoke<SystemGroup[]>('get_system_groups');
       setGroups(groupsData);
@@ -345,11 +346,11 @@ export default function UserManager() {
               { value: '/bin/false', label: 'False (/bin/false)' },
             ]}
           />
-          <Select
+          <MultiSelect
             label="Additional Groups"
             placeholder="Select groups"
             value={newUser.groups}
-            onChange={(v) => setNewUser({ ...newUser, groups: v as string[] })}
+            onChange={(v) => setNewUser({ ...newUser, groups: v })}
             data={availableGroups}
             clearable
             searchable

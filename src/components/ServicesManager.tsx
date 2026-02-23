@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { useServer } from '../context/ServerContext';
 import { useToast } from '../context/ToastContext';
+import { isTauri } from '../lib/tauri';
 import {
   Paper, Text, Group, Title, Button, Stack, ScrollArea, Table, Badge, ActionIcon, Modal, Box, Loader, Center, ThemeIcon, Divider, TextInput, Card, SimpleGrid,
 } from '@mantine/core';
@@ -29,7 +30,7 @@ export default function ServicesManager() {
   const [filterState, setFilterState] = useState<string>('all');
 
   const fetchServices = useCallback(async () => {
-    if (!isConnected) return;
+    if (!isConnected || !isTauri()) return;
     setLoading(true);
     try {
       const data = await invoke<ServiceInfo[]>('get_services');

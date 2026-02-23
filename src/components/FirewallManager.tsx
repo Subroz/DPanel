@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { useServer } from '../context/ServerContext';
 import { useToast } from '../context/ToastContext';
+import { isTauri } from '../lib/tauri';
 import { UfwOverview, PortInfo } from '../types';
 import {
   Paper,
@@ -96,7 +97,7 @@ export default function FirewallManager() {
   });
 
   const fetchUfwData = async () => {
-    if (!isConnected) return;
+    if (!isConnected || !isTauri()) return;
     setLoading(true);
     try {
       const [overviewData, listeningData] = await Promise.all([

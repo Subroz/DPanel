@@ -12,6 +12,7 @@ import ReactFlow, {
 import 'reactflow/dist/style.css';
 import { Box, Text, Center, Loader, Group, Paper, Badge, Stack, Button } from '@mantine/core';
 import { invoke } from '@tauri-apps/api/core';
+import { isTauri } from '../../lib/tauri';
 import InfraNode from './InfraNode';
 import { InfrastructureGraph } from '../../types/infrastructure-graph';
 
@@ -40,6 +41,10 @@ export function InfrastructureGraphView() {
   const [error, setError] = useState<string | null>(null);
 
   const loadGraphData = async () => {
+    if (!isTauri()) {
+      setIsLoading(false);
+      return;
+    }
     setIsLoading(true);
     setError(null);
     try {

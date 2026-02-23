@@ -12,6 +12,7 @@ import ReactFlow, {
 import 'reactflow/dist/style.css';
 import { Box, Text, Center, Loader } from '@mantine/core';
 import { invoke } from '@tauri-apps/api/core';
+import { isTauri } from '../../lib/tauri';
 import { ConfigToolbar } from './ConfigToolbar';
 import { ConfigDetails } from './ConfigDetails';
 import CustomNode from './ConfigNode';
@@ -54,6 +55,10 @@ export function ConfigGraph({ initialData }: ConfigGraphProps) {
   }, [filterState, searchQuery, graphData]);
 
   const loadGraphData = async () => {
+    if (!isTauri()) {
+      setIsLoading(false);
+      return;
+    }
     setIsLoading(true);
     try {
       const data = await invoke<GraphData>('get_config_dependencies');

@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { useServer } from '../context/ServerContext';
 import { useToast } from '../context/ToastContext';
+import { isTauri } from '../lib/tauri';
 import {
   Paper, Text, Group, Title, Button, Stack, Grid, Card, ThemeIcon, Badge, ActionIcon, Modal, Box, Loader, Center, Divider, Tabs, Code, ScrollArea, Textarea,
 } from '@mantine/core';
@@ -39,7 +40,7 @@ export default function NginxManager() {
   const [configType, setConfigType] = useState<'main' | 'vhost'>('main');
 
   const fetchStatus = useCallback(async () => {
-    if (!isConnected) return;
+    if (!isConnected || !isTauri()) return;
     setLoading(true);
     try {
       const data = await invoke<NginxStatus>('nginx_status');
@@ -53,7 +54,7 @@ export default function NginxManager() {
   }, [isConnected]);
 
   const fetchVhosts = useCallback(async () => {
-    if (!isConnected) return;
+    if (!isConnected || !isTauri()) return;
     try {
       const data = await invoke<NginxVhost[]>('get_nginx_vhosts');
       setVhosts(data);

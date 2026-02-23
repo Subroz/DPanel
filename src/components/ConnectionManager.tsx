@@ -31,7 +31,7 @@ import {
   IconStarOff,
 } from '@tabler/icons-react';
 
-const isTauri = () => typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window;
+import { isTauri } from '../lib/tauri';
 
 export default function ConnectionManager() {
   const { setActiveServer, setIsConnected } = useServer();
@@ -450,7 +450,7 @@ export default function ConnectionManager() {
 
                 <Divider my="xs" />
 
-                <Group justify="apart">
+                <Group justify="space-between">
                   <Button
                     variant="outline"
                     onClick={testConnection}

@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { useServer } from '../context/ServerContext';
 import { useToast } from '../context/ToastContext';
+import { isTauri } from '../lib/tauri';
 import {
   Paper, Text, Group, Title, Button, Stack, Grid, Card, ThemeIcon, Badge, ActionIcon, Modal, Box, Loader, Center, Divider, Tabs, Textarea, Table, ScrollArea, TextInput, Select, Code,
 } from '@mantine/core';
@@ -52,7 +53,7 @@ export default function CronManager() {
   const [cronLogs, setCronLogs] = useState('');
 
   const fetchUserCrontab = useCallback(async () => {
-    if (!isConnected) return;
+    if (!isConnected || !isTauri()) return;
     try {
       const crontab = await invoke<string>('get_user_crontab');
       setUserCrontab(crontab.includes('command not found') ? '' : crontab);
@@ -62,7 +63,7 @@ export default function CronManager() {
   }, [isConnected]);
 
   const fetchSystemCrontab = useCallback(async () => {
-    if (!isConnected) return;
+    if (!isConnected || !isTauri()) return;
     try {
       const crontab = await invoke<string>('get_system_crontab');
       setSystemCrontab(crontab);
@@ -72,7 +73,7 @@ export default function CronManager() {
   }, [isConnected]);
 
   const fetchCronDJobs = useCallback(async () => {
-    if (!isConnected) return;
+    if (!isConnected || !isTauri()) return;
     try {
       const jobs = await invoke<CronJob[]>('get_cron_d_jobs');
       setCronDJobs(jobs);
@@ -82,7 +83,7 @@ export default function CronManager() {
   }, [isConnected]);
 
   const fetchCronFolders = useCallback(async () => {
-    if (!isConnected) return;
+    if (!isConnected || !isTauri()) return;
     try {
       const folders = await invoke<CronFolder[]>('get_cron_folders');
       setCronFolders(folders);
