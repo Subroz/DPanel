@@ -19,17 +19,18 @@ pub async fn get_infrastructure_graph(state: State<'_, crate::commands::AppState
     let mut nodes = Vec::new();
     let mut edges = Vec::new();
 
-    // Add Internet node (entry point)
+    // ============== LAYER 1: INTERNET ==============
     nodes.push(InfraGraphNode {
         id: "internet".to_string(),
         label: "Internet".to_string(),
         node_type: InfraGraphNodeType::Internet,
         status: NodeStatus::Healthy,
         metadata: json!({
-            "description": "External traffic entry point"
+            "description": "External network"
         }),
     });
 
+    // ============== LAYER 2: NGINX & HOST PORTS ==============
     // Get Nginx status
     let nginx_status_output = client
         .execute_command("systemctl is-active nginx 2>/dev/null || echo 'inactive'")
@@ -47,23 +48,47 @@ pub async fn get_infrastructure_graph(state: State<'_, crate::commands::AppState
         status: if nginx_running { NodeStatus::Running } else { NodeStatus::Stopped },
         metadata: json!({
             "version": nginx_version.trim(),
-            "running": nginx_running,
-            "config_path": "/etc/nginx/nginx.conf"
+            "running": nginx_running
         }),
     });
 
-    // Edge: Internet -> Nginx (port 80/443)
+    // Edge: Internet -> Nginx
     edges.push(InfraGraphEdge {
         source: "internet".to_string(),
         target: "nginx".to_string(),
         edge_type: "routes_to".to_string(),
         label: Some("80/443".to_string()),
-        metadata: Some(json!({
-            "ports": [80, 443]
-        })),
+        metadata: None,
     });
 
-    // Get Nginx vhosts
+    // Get host network interface
+    let host_interface = client
+        .execute_command("ip route | grep default | awk '{print $5}' | head -1")
+        .unwrap_or_else(|_| "eth0".to_string())
+        .trim()
+        .to_string();
+
+    nodes.push(InfraGraphNode {
+        id: "host_network".to_string(),
+        label: format!("Host ({})", host_interface),
+        node_type: InfraGraphNodeType::HostNetwork,
+        status: NodeStatus::Running,
+        metadata: json!({
+            "interface": host_interface,
+            "type": "host"
+        }),
+    });
+
+    // Edge: Host Network -> Internet (outbound NAT)
+    edges.push(InfraGraphEdge {
+        source: "host_network".to_string(),
+        target: "internet".to_string(),
+        edge_type: "outbound".to_string(),
+        label: Some("NAT".to_string()),
+        metadata: None,
+    });
+
+    // ============== LAYER 3: VHOSTS & DIRECT PORTS ==============
     let vhosts = get_vhosts_for_graph(client)?;
     let mut vhost_to_backend: HashMap<String, String> = HashMap::new();
 
@@ -78,9 +103,7 @@ pub async fn get_infrastructure_graph(state: State<'_, crate::commands::AppState
                 "name": vhost.name,
                 "server_name": vhost.server_name,
                 "enabled": vhost.enabled,
-                "ssl": vhost.ssl_enabled,
-                "listen_port": vhost.listen_port,
-                "root_path": vhost.root_path
+                "ssl": vhost.ssl_enabled
             }),
         });
 
@@ -93,13 +116,13 @@ pub async fn get_infrastructure_graph(state: State<'_, crate::commands::AppState
             metadata: None,
         });
 
-        // Parse proxy_pass from vhost config
+        // Parse proxy_pass
         if let Ok(backend) = extract_proxy_target(client, &vhost.name).await {
             vhost_to_backend.insert(vhost_id.clone(), backend.clone());
         }
     }
 
-    // Get Docker containers
+    // ============== LAYER 4: DOCKER CONTAINERS ==============
     let containers = get_containers_for_graph(client)?;
     
     for container in &containers {
@@ -112,26 +135,106 @@ pub async fn get_infrastructure_graph(state: State<'_, crate::commands::AppState
             metadata: json!({
                 "id": container.id,
                 "image": container.image,
-                "state": container.state,
-                "status": container.status,
-                "cpu": container.cpu_percent,
-                "memory": container.memory_usage
+                "state": container.state
             }),
         });
 
-        // Edge: Vhost -> Container (if proxy_pass matches)
+        // Edge: Vhost -> Container (proxy_pass)
         for (vhost_id, backend) in &vhost_to_backend {
-            if backend.contains(&container.name) || backend.contains(&container.id[..12]) {
+            if backend.contains(&container.name) || backend.contains(&container.id[..12.min(container.id.len())]) {
                 edges.push(InfraGraphEdge {
                     source: vhost_id.clone(),
                     target: container_id.clone(),
                     edge_type: "proxies_to".to_string(),
                     label: Some(backend.clone()),
-                    metadata: Some(json!({
-                        "backend": backend
-                    })),
+                    metadata: None,
                 });
             }
+        }
+    }
+
+    // ============== LAYER 5: DOCKER NETWORKS ==============
+    let networks = get_docker_networks_for_graph(client)?;
+    
+    for network in &networks {
+        let network_id = format!("network:{}", network.name);
+        nodes.push(InfraGraphNode {
+            id: network_id.clone(),
+            label: format!("{} ({})", network.name, network.driver),
+            node_type: InfraGraphNodeType::DockerNetwork,
+            status: NodeStatus::Healthy,
+            metadata: json!({
+                "driver": network.driver,
+                "scope": network.scope,
+                "subnet": network.subnet,
+                "containers": network.containers.len()
+            }),
+        });
+
+        // Edge: Docker Network -> Host Network (NAT)
+        edges.push(InfraGraphEdge {
+            source: network_id.clone(),
+            target: "host_network".to_string(),
+            edge_type: "nat".to_string(),
+            label: Some("masquerade".to_string()),
+            metadata: None,
+        });
+
+        // Edge: Container -> Docker Network
+        for container in &containers {
+            let container_short_id = &container.id[..12.min(container.id.len())];
+            if network.containers.contains(&container.name) || 
+               network.containers.iter().any(|c| c.starts_with(container_short_id)) {
+                edges.push(InfraGraphEdge {
+                    source: format!("container:{}", container.name),
+                    target: network_id.clone(),
+                    edge_type: "connected_to".to_string(),
+                    label: None,
+                    metadata: None,
+                });
+            }
+        }
+    }
+
+    // ============== DIRECT PORT MAPPINGS ==============
+    for container in &containers {
+        let ports = get_container_ports(client, &container.name).await;
+        
+        for port_mapping in ports {
+            let host_port = &port_mapping.host_port;
+            let container_port = &port_mapping.container_port;
+            
+            // Create HostPort node
+            let host_port_id = format!("hostport:{}", host_port);
+            nodes.push(InfraGraphNode {
+                id: host_port_id.clone(),
+                label: format!("Port :{}", host_port),
+                node_type: InfraGraphNodeType::HostPort,
+                status: NodeStatus::Running,
+                metadata: json!({
+                    "host_port": host_port,
+                    "container_port": container_port,
+                    "protocol": port_mapping.protocol
+                }),
+            });
+
+            // Edge: Internet -> HostPort (direct access)
+            edges.push(InfraGraphEdge {
+                source: "internet".to_string(),
+                target: host_port_id.clone(),
+                edge_type: "direct_access".to_string(),
+                label: Some(format!(":{}", host_port)),
+                metadata: None,
+            });
+
+            // Edge: HostPort -> Container
+            edges.push(InfraGraphEdge {
+                source: host_port_id.clone(),
+                target: format!("container:{}", container.name),
+                edge_type: "port_mapping".to_string(),
+                label: Some(format!("→ :{}", container_port)),
+                metadata: None,
+            });
         }
     }
 
@@ -143,10 +246,44 @@ pub async fn get_infrastructure_graph(state: State<'_, crate::commands::AppState
         enabled_vhosts: vhosts.iter().filter(|v| v.enabled).count(),
         nginx_status: if nginx_running { "running".to_string() } else { "stopped".to_string() },
         total_volumes: 0,
-        total_networks: 0,
+        total_networks: networks.len(),
     };
 
     Ok(InfrastructureGraph { nodes, edges, summary })
+}
+
+async fn get_container_ports(client: &std::sync::Arc<crate::ssh::SshClient>, container_name: &str) -> Vec<PortMapping> {
+    let mut ports = Vec::new();
+    
+    let output = client
+        .execute_command(&format!("docker port {}", container_name))
+        .unwrap_or_default();
+    
+    for line in output.lines() {
+        let parts: Vec<&str> = line.split("->").collect();
+        if parts.len() == 2 {
+            let container_port_full = parts[0].trim();
+            let host_binding = parts[1].trim();
+            
+            // Parse container port (e.g., "80/tcp")
+            let container_port = container_port_full.split('/').next().unwrap_or("").to_string();
+            let protocol = container_port_full.split('/').nth(1).unwrap_or("tcp").to_string();
+            
+            // Parse host binding (e.g., "0.0.0.0:8080")
+            let host_port = host_binding.split(':').last().unwrap_or("").to_string();
+            
+            if !host_port.is_empty() {
+                ports.push(PortMapping {
+                    host_ip: "0.0.0.0".to_string(),
+                    host_port,
+                    container_port,
+                    protocol,
+                });
+            }
+        }
+    }
+    
+    ports
 }
 
 fn get_vhosts_for_graph(client: &std::sync::Arc<crate::ssh::SshClient>) -> Result<Vec<NginxVhost>, String> {
@@ -190,23 +327,19 @@ fn get_vhosts_for_graph(client: &std::sync::Arc<crate::ssh::SshClient>) -> Resul
 
 fn get_containers_for_graph(client: &std::sync::Arc<crate::ssh::SshClient>) -> Result<Vec<DockerContainer>, String> {
     let ps_output = client
-        .execute_command("docker ps -a --format '{{.ID}}|{{.Names}}|{{.Image}}|{{.Status}}|{{.State}}' --no-trunc")
+        .execute_command("docker ps --format '{{.ID}}|{{.Names}}|{{.Image}}|{{.State}}' --no-trunc")
         .map_err(|e| e.message)?;
-
-    let stats_output = client
-        .execute_command("docker stats --no-stream --format '{{.Name}}|{{.CPUPerc}}|{{.MemUsage}}'")
-        .unwrap_or_default();
 
     let mut containers = Vec::new();
     for line in ps_output.lines() {
         let parts: Vec<&str> = line.split('|').collect();
-        if parts.len() >= 5 {
+        if parts.len() >= 4 {
             containers.push(DockerContainer {
                 id: parts[0].to_string(),
                 name: parts[1].to_string(),
                 image: parts[2].to_string(),
-                status: parts[3].to_string(),
-                state: parts[4].to_string(),
+                status: "running".to_string(),
+                state: parts[3].to_string(),
                 cpu_percent: 0.0,
                 memory_usage: 0,
                 memory_limit: 0,
@@ -215,16 +348,58 @@ fn get_containers_for_graph(client: &std::sync::Arc<crate::ssh::SshClient>) -> R
         }
     }
 
-    for line in stats_output.lines() {
+    Ok(containers)
+}
+
+fn get_docker_networks_for_graph(client: &std::sync::Arc<crate::ssh::SshClient>) -> Result<Vec<DockerNetwork>, String> {
+    let output = client
+        .execute_command("docker network ls --format '{{.ID}}|{{.Name}}|{{.Driver}}|{{.Scope}}'")
+        .map_err(|e| e.message)?;
+
+    let mut networks = Vec::new();
+    for line in output.lines() {
         let parts: Vec<&str> = line.split('|').collect();
-        if parts.len() >= 3 {
-            if let Some(container) = containers.iter_mut().find(|c| c.name == parts[0]) {
-                container.cpu_percent = parts[1].trim_end_matches('%').parse().unwrap_or(0.0);
+        if parts.len() >= 4 {
+            let network_id = parts[0].to_string();
+            let network_name = parts[1].to_string();
+            
+            // Skip null network
+            if network_name == "null" || network_name == "host" {
+                continue;
             }
+            
+            // Get containers in this network
+            let containers_output = client
+                .execute_command(&format!("docker network inspect {} --format '{{{{range .Containers}}}}{{.Name}},{{end}}'", network_id))
+                .unwrap_or_default();
+            
+            let containers: Vec<String> = containers_output
+                .trim_end_matches(',')
+                .split(',')
+                .filter(|s| !s.is_empty())
+                .map(|s| s.to_string())
+                .collect();
+
+            // Get subnet
+            let subnet_output = client
+                .execute_command(&format!("docker network inspect {} --format '{{{{(index .IPAM.Config 0).Subnet}}}}'", network_id))
+                .unwrap_or_default();
+            
+            let subnet = if subnet_output.trim().is_empty() { None } else { Some(subnet_output.trim().to_string()) };
+
+            networks.push(DockerNetwork {
+                id: network_id,
+                name: network_name,
+                driver: parts[2].to_string(),
+                scope: parts[3].to_string(),
+                subnet,
+                gateway: None,
+                containers,
+            });
         }
     }
 
-    Ok(containers)
+    Ok(networks)
 }
 
 async fn extract_proxy_target(client: &std::sync::Arc<crate::ssh::SshClient>, vhost_name: &str) -> Result<String, String> {
@@ -232,7 +407,6 @@ async fn extract_proxy_target(client: &std::sync::Arc<crate::ssh::SshClient>, vh
         .execute_command(&format!("cat /etc/nginx/sites-available/{}", vhost_name))
         .map_err(|e| e.message)?;
 
-    // Look for proxy_pass directive
     for line in content.lines() {
         let line = line.trim();
         if line.starts_with("proxy_pass") {

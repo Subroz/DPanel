@@ -146,3 +146,5 @@ pnpm-lock.yaml.backup
 .temp/
 temp/
 tmp/
+.qwen/
+gha-creds-*.json
