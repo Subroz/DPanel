@@ -157,3 +157,5 @@ replit.nix
 .temp/
 temp/
 tmp/
+.qwen/
+gha-creds-*.json

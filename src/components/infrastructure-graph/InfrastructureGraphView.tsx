@@ -29,8 +29,11 @@ interface LegendItem {
 const LEGEND_ITEMS: LegendItem[] = [
   { color: '#10b981', label: 'Internet', type: 'internet' },
   { color: '#f59e0b', label: 'Nginx', type: 'nginx' },
+  { color: '#f97316', label: 'Host Port', type: 'hostport' },
   { color: '#8b5cf6', label: 'Vhost', type: 'vhost' },
   { color: '#3b82f6', label: 'Container', type: 'container' },
+  { color: '#06b6d4', label: 'Docker Network', type: 'dockernetwork' },
+  { color: '#6b7280', label: 'Host Network', type: 'hostnetwork' },
 ];
 
 export function InfrastructureGraphView() {
@@ -60,23 +63,22 @@ export function InfrastructureGraphView() {
   };
 
   const convertToReactFlow = (data: InfrastructureGraph) => {
-    // Calculate initial positions using a simple layering approach
+    // Group nodes by type
     const layers: Record<string, Node<any>[]> = {
       internet: [],
       nginx: [],
+      hostnetwork: [],
       vhost: [],
+      hostport: [],
       container: [],
-      volume: [],
-      network: [],
-      port: [],
+      dockernetwork: [],
     };
 
-    // Group nodes by type
     data.nodes.forEach((node) => {
       const reactFlowNode: Node<any> = {
         id: node.id,
         type: 'infra',
-        position: { x: 0, y: 0 }, // Will be calculated
+        position: { x: 0, y: 0 },
         data: {
           label: node.label,
           node_type: node.node_type,
@@ -84,25 +86,34 @@ export function InfrastructureGraphView() {
           metadata: node.metadata,
         },
       };
-      layers[node.node_type].push(reactFlowNode);
+      if (layers[node.node_type]) {
+        layers[node.node_type].push(reactFlowNode);
+      }
     });
 
-    // Calculate positions - simple left to right flow
-    const layerOrder = ['internet', 'nginx', 'vhost', 'container'];
-    const layerSpacing = 350;  // More space between layers
-    const nodeSpacing = 200;
+    // Position nodes in layers
+    const layerPositions: Record<string, { x: number; y: number }> = {
+      internet: { x: 0, y: 0 },
+      nginx: { x: -300, y: 150 },
+      hostnetwork: { x: 300, y: 150 },
+      vhost: { x: -300, y: 300 },
+      hostport: { x: 300, y: 300 },
+      container: { x: 0, y: 450 },
+      dockernetwork: { x: 0, y: 600 },
+    };
     
     const positionedNodes: Node<any>[] = [];
-    
-    layerOrder.forEach((layerType, layerIndex) => {
-      const layerNodes = layers[layerType];
-      const layerWidth = (layerNodes.length - 1) * nodeSpacing;
-      const layerStartX = -layerWidth / 2;
+    const nodeSpacing = 200;
 
-      layerNodes.forEach((node, nodeIndex) => {
+    Object.entries(layers).forEach(([layerType, nodes]) => {
+      const basePos = layerPositions[layerType];
+      const layerWidth = (nodes.length - 1) * nodeSpacing;
+      const startX = basePos.x - layerWidth / 2;
+
+      nodes.forEach((node, index) => {
         node.position = {
-          x: layerStartX + nodeIndex * nodeSpacing,
-          y: layerIndex * layerSpacing,
+          x: startX + index * nodeSpacing,
+          y: basePos.y,
         };
         positionedNodes.push(node);
       });
@@ -211,6 +222,12 @@ export function InfrastructureGraphView() {
                 <Text size="xs" c="dimmed">Vhosts</Text>
                 <Text size="xs" c="white">
                   {graphData.summary.enabled_vhosts}/{graphData.summary.total_vhosts}
+                </Text>
+              </Group>
+              <Group justify="space-between">
+                <Text size="xs" c="dimmed">Networks</Text>
+                <Text size="xs" c="white">
+                  {graphData.summary.total_networks}
                 </Text>
               </Group>
             </Stack>

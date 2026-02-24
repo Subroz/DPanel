@@ -5,10 +5,10 @@ import {
   IconWorld,
   IconServer,
   IconBrandDocker,
-  IconDatabase,
   IconNetwork,
-  IconPlug,
   IconRouter,
+  IconPlug,
+  IconCloud,
 } from '@tabler/icons-react';
 import { InfraGraphNodeType, NodeStatus } from '../../types/infrastructure-graph';
 
@@ -29,14 +29,14 @@ const getNodeIcon = (nodeType: InfraGraphNodeType) => {
       return <IconServer size={20} />;
     case 'vhost':
       return <IconRouter size={20} />;
+    case 'hostport':
+      return <IconPlug size={20} />;
     case 'container':
       return <IconBrandDocker size={20} />;
-    case 'volume':
-      return <IconDatabase size={20} />;
-    case 'network':
+    case 'dockernetwork':
       return <IconNetwork size={20} />;
-    case 'port':
-      return <IconPlug size={20} />;
+    case 'hostnetwork':
+      return <IconCloud size={20} />;
     default:
       return <IconServer size={20} />;
   }
@@ -64,25 +64,25 @@ const getNodeColors = (nodeType: InfraGraphNodeType, status: NodeStatus) => {
         border: isStopped ? '#4b5563' : '#8b5cf6',
         text: '#ffffff',
       };
+    case 'hostport':
+      return {
+        bg: isStopped ? '#4b5563' : 'linear-gradient(135deg, #f97316 0%, #ea580c 100%)',
+        border: isStopped ? '#4b5563' : '#f97316',
+        text: '#ffffff',
+      };
     case 'container':
       return {
         bg: isStopped ? '#4b5563' : 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
         border: isStopped ? '#4b5563' : '#3b82f6',
         text: '#ffffff',
       };
-    case 'volume':
-      return {
-        bg: isStopped ? '#4b5563' : 'linear-gradient(135deg, #ec4899 0%, #db2777 100%)',
-        border: isStopped ? '#4b5563' : '#ec4899',
-        text: '#ffffff',
-      };
-    case 'network':
+    case 'dockernetwork':
       return {
         bg: isStopped ? '#4b5563' : 'linear-gradient(135deg, #06b6d4 0%, #0891b2 100%)',
         border: isStopped ? '#4b5563' : '#06b6d4',
         text: '#ffffff',
       };
-    case 'port':
+    case 'hostnetwork':
       return {
         bg: isStopped ? '#4b5563' : 'linear-gradient(135deg, #6b7280 0%, #4b5563 100%)',
         border: isStopped ? '#4b5563' : '#6b7280',

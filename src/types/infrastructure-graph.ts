@@ -1,6 +1,6 @@
 // Infrastructure Graph TypeScript Types
 
-export type InfraGraphNodeType = 'internet' | 'nginx' | 'vhost' | 'container' | 'volume' | 'network' | 'port';
+export type InfraGraphNodeType = 'internet' | 'nginx' | 'vhost' | 'hostport' | 'container' | 'dockernetwork' | 'hostnetwork';
 
 export type NodeStatus = 'running' | 'stopped' | 'healthy' | 'unhealthy' | 'unknown';
 

@@ -413,10 +413,10 @@ pub enum InfraGraphNodeType {
     Internet,
     Nginx,
     Vhost,
+    HostPort,
     Container,
-    Volume,
-    Network,
-    Port,
+    DockerNetwork,
+    HostNetwork,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
